@@ -31,7 +31,7 @@ void estimate(struct config *cfg, struct stat_list *sl, double multiplier) {
 	printf("\tto extract %s", tmp_buf);
 	pprint_size(tmp_buf, tmp_buf_size, cfg->page_size * cfg->entropy_pages * multiplier);
 	printf(" from %s you need", tmp_buf);
-	printf(" %.3f±%.3f [s]\n", sl->mean * multiplier / 10e9, sl->std / 10e9);
+	printf(" %.3f±%.3f [s]\n", sl->mean * multiplier / 1e9, sl->std / 1e9);
 }
 
 int parse_size_t(size_t *out, char *in) {

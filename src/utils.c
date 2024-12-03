@@ -26,15 +26,16 @@ size_t get_file_size(FILE *fp) {
 }
 
 byte *get_random_memory(size_t size) {
-
 	byte *mem = malloc(size);
 	int fd = open("/dev/urandom", O_RDONLY);
-        if (size != read(fd, mem, size)){
-		free(mem);
-		return NULL;
+
+  if (size != read(fd, mem, size)){
+  	free(mem);
+  	mem = NULL;
 	}
+
+	close(fd);
 	return mem;
-        
 }
 
 void pprint_size(char *buf, size_t buf_size, size_t size){

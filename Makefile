@@ -19,7 +19,7 @@ ifndef PAGE_SIZE
 	$(error "Variable PAGE_SIZE is not defined")
 endif
 	@ echo [m] creating an entropy file with \($(ENTROPY_PAGES)\) pages of \($(PAGE_SIZE)\) bytes...
-	dd if=/dev/zero of=$(FNAME) bs=$(PAGE_SIZE) count=$(ENTROPY_PAGES) 2>/dev/null
+	dd status=progress if=/dev/zero of=$(FNAME) bs=$(PAGE_SIZE) count=$(ENTROPY_PAGES)
 
 main: main.o src/utils.o
 
@@ -34,6 +34,7 @@ sizes:
 	@ echo "1 GiB = 262144 4-KiB pages"
 	@ echo "10 GiB = 2621440 4-KiB pages"
 	@ echo "50 GiB = 13107200 4-KiB pages"
+	@ echo "200 GiB = 52428800 4-KiB pages"
 
 clean:
 	@ $(foreach obj,$(OBJECTS), $(shell rm -rf $(obj)))

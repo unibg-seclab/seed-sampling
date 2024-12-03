@@ -21,6 +21,8 @@ endif
 	@ echo [m] creating an entropy file with \($(ENTROPY_PAGES)\) pages of \($(PAGE_SIZE)\) bytes...
 	dd if=/dev/zero of=$(FNAME) bs=$(PAGE_SIZE) count=$(ENTROPY_PAGES) 2>/dev/null
 
+main: main.o $(OBJECTS)
+
 .PHONY: run
 run: entropy $(SAMPLING)
 	@ ./$(SAMPLING) "$(FNAME)" $(PAGE_SIZE) $(SEED_PAGES) $(ENTROPY_PAGES) $(REPS)

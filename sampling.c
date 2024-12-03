@@ -13,7 +13,7 @@ struct config {
 	size_t seed_pages;
 	size_t entropy_pages;
 	char *fname;
-	size_t reps;
+	long reps;
 };
 
 void print_stats(struct stat_list *sl) {
@@ -34,34 +34,40 @@ void estimate(struct config *cfg, struct stat_list *sl, double multiplier) {
 	printf(" %.3f±%.3f [s]\n", sl->mean * multiplier / 10e9, sl->std / 10e9);
 }
 
+int parse_size_t(size_t *out, char *in) {
+	if (sscanf(in, "%zu", out) == 1) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 // Parses the parameters. Returns 1 in case parameters are invalid, 0
 // on success.
-static inline int parse(struct config *params, int argc, char **argv) {
+int parse(struct config *params, int argc, char **argv) {
 
 	if (argc < 6){
 		printf("Missing arguments: fname[char *], page_size[size_t], seed_pages[size_t], entropy_pages[size_t], reps[size_t]\n");
 		return 1;
 	}
-	params->fname = *(argv + 1);
-	params->page_size = atoi(*(argv + 2));
-	params->seed_pages = atoi(*(argv + 3));
-	params->entropy_pages = atoi(*(argv + 4));
-	params->reps =  atoi(*(argv + 5));
+	params->fname = argv[1];
 	
-	if (params->page_size == 0){
+	if (parse_size_t(&params->page_size, argv[2])) {
 		printf("Invalid page_size\n");
 		return 1;
 	}
-	if (params->seed_pages == 0){
+	if (parse_size_t(&params->seed_pages, argv[3])) {
 		printf("Invalid number of seed_pages\n");
 		return 1;
 	}
-	if (params->entropy_pages == 0 || params->entropy_pages < params->seed_pages){
+	if (parse_size_t(&params->entropy_pages, argv[4]) || params->entropy_pages < params->seed_pages){
 		printf("Invalid number of entropy_pages\n");
 		return 1;
 	}
-	if (params->reps == 0){
-		printf("Invalid number of repetitions\n");
+
+	params->reps = strtol(argv[5], NULL, 10);
+	if (params->reps < 1) {
+		printf("Invalid number of repetitions, must be positive\n");
 		return 1;
 	}
 

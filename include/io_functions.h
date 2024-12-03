@@ -20,7 +20,7 @@ int single_fread(FILE *f, byte *buf, size_t page_size);
 // Returns 0 in case of success, -1 in case of error.
 int scan(FILE *f, byte *seed, size_t page_size, size_t pages);
 
-// First transforms the buffer `indexes` into a sequence of 4-byte
+// First transforms the buffer `indexes` into a sequence of 6-byte
 // positions, which are used as page pointers into `f`. Then, for each
 // position it copies a memory page of `f` into `seed`. Returns 0 in
 // case of success, -1 in case of error.

@@ -1,4 +1,3 @@
-#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <math.h>
@@ -46,14 +45,16 @@ int scan(FILE *f, byte *seed, size_t page_size, size_t pages){
 	return 0;
 }
 
-// Reads the i-th 4-byte index from the pool of indexes
-static inline unsigned long idx_to_pos(byte *indexes, const unsigned int i, const unsigned int tot_pages) {
+// Reads the i-th 6-byte index from the pool of indexes
+static inline size_t idx_to_pos(byte *indexes, const unsigned int i, const unsigned int tot_pages) {
 
 	unsigned int b = i * 4;
-	unsigned int pos = indexes[b] << 24;
-	pos += indexes[b+1] << 16;
-	pos += indexes[b+2] << 8;
-	pos += indexes[b+3];
+	size_t pos = (size_t)indexes[b] << 40;
+	pos += (size_t)indexes[b+1] << 32;
+	pos += (size_t)indexes[b+2] << 24;
+	pos += (size_t)indexes[b+3] << 16;
+        pos += (size_t)indexes[b + 4] << 8;
+        pos += (size_t)indexes[b+5];
 	
 	return pos % tot_pages;
 }

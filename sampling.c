@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
 	       tmp_buf,
 	       ((double)params.seed_pages * 100)/params.entropy_pages);
 	// allocate random indexes (each index is a 4-bytes bytestring)
-	indexes_size = sizeof(unsigned int) * params.seed_pages;
+	indexes_size = sizeof(size_t) * params.seed_pages;
 	indexes = get_random_memory(indexes_size);
 	if (indexes == NULL){
 		STATUS = 1;

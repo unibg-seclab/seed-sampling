@@ -33,6 +33,7 @@ sizes:
 	@ echo "1 MiB = 256 4-KiB pages"
 	@ echo "1 GiB = 262144 4-KiB pages"
 	@ echo "10 GiB = 2621440 4-KiB pages"
+	@ echo "50 GiB = 13107200 4-KiB pages"
 
 clean:
 	@ $(foreach obj,$(OBJECTS), $(shell rm -rf $(obj)))

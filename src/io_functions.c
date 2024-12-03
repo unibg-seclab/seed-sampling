@@ -46,7 +46,7 @@ int scan(FILE *f, byte *seed, size_t page_size, size_t pages){
 }
 
 // Reads the i-th 6-byte index from the pool of indexes
-static inline size_t idx_to_pos(byte *indexes, const unsigned int i, const unsigned int tot_pages) {
+static inline size_t idx_to_pos(byte *indexes, const unsigned int i, const size_t tot_pages) {
 
 	unsigned int b = i * 4;
 	size_t pos = (size_t)indexes[b] << 40;
@@ -61,7 +61,7 @@ static inline size_t idx_to_pos(byte *indexes, const unsigned int i, const unsig
 
 int random_read(FILE *f, byte *seed, byte *indexes, size_t page_size, size_t pages){
 
-	const unsigned int tot_entropy_pages = get_file_size(f) / page_size;
+	const size_t tot_entropy_pages = get_file_size(f) / page_size;
 
 	unsigned long offset;
 	for (size_t i = 0; i < pages; i++){

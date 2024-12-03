@@ -23,7 +23,7 @@ endif
 
 .PHONY: run
 run: entropy $(SAMPLING)
-	@ ./$(SAMPLING) $(FNAME) $(PAGE_SIZE) $(SEED_PAGES) $(ENTROPY_PAGES) $(REPS)
+	@ ./$(SAMPLING) "$(FNAME)" $(PAGE_SIZE) $(SEED_PAGES) $(ENTROPY_PAGES) $(REPS)
 
 .PHONY: sizes
 sizes:

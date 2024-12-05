@@ -1,15 +1,15 @@
 SOURCES = $(wildcard src/*.c)
 OBJECTS = $(SOURCES:%.c=%.o)
 
-SAMPLING = sampling
+SGEN = sgen
 
 # ------------ Compiler flags
 
 CC = gcc
 CFLAGS = -march=native -Wno-cpp -Wall -Iinclude -I../include
-LDLIBS = -lm
+LDLIBS = -lm -lcrypto 
 
-$(SAMPLING): sampling.o $(OBJECTS)
+$(SGEN): sgen.o $(OBJECTS)
 
 entropy:
 ifndef ENTROPY_PAGES
@@ -21,11 +21,9 @@ endif
 	@ echo [m] creating an entropy file with \($(ENTROPY_PAGES)\) pages of \($(PAGE_SIZE)\) bytes...
 	dd status=progress if=/dev/zero of=$(FNAME) bs=$(PAGE_SIZE) count=$(ENTROPY_PAGES)
 
-main: main.o src/utils.o
-
 .PHONY: run
-run: entropy $(SAMPLING)
-	@ ./$(SAMPLING) "$(FNAME)" $(PAGE_SIZE) $(SEED_PAGES) $(ENTROPY_PAGES) $(REPS)
+run: $(SGEN)
+	@ ./$(SGEN) "$(FNAME)" $(PAGE_SIZE) $(SEED_PAGES) $(ENTROPY_PAGES) $(REPS) $(KEY) $(IV)
 
 .PHONY: sizes
 sizes:
@@ -38,5 +36,5 @@ sizes:
 
 clean:
 	@ $(foreach obj,$(OBJECTS), $(shell rm -rf $(obj)))
-	@ rm -rf $(SAMPLING) $(SAMPLING).o
+	@ rm -rf $(SGEN) $(SGEN).o
 	@ rm -rf entropy

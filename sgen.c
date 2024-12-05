@@ -3,10 +3,15 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "crypto.h"
 #include "io_functions.h"
 #include "stats.h"
 #include "types.h"
 #include "utils.h"
+
+#define KEY_SIZE 32
+#define IV_SIZE 16
+#define INDEX_SIZE 6
 
 struct config {
 	size_t page_size; // bytes
@@ -14,6 +19,8 @@ struct config {
 	size_t entropy_pages;
 	char *fname;
 	long reps;
+	byte *key;
+	byte *iv;
 };
 
 void print_stats(struct stat_list *sl) {
@@ -28,13 +35,13 @@ void estimate(struct config *cfg, struct stat_list *sl, double multiplier) {
 	size_t tmp_buf_size = 11;
 	char tmp_buf[tmp_buf_size];
 	pprint_size(tmp_buf, tmp_buf_size, cfg->page_size * cfg->seed_pages * multiplier);
-	printf("\tto extract %s", tmp_buf);
+	printf("\t[linear approx.] %s", tmp_buf);
 	pprint_size(tmp_buf, tmp_buf_size, cfg->page_size * cfg->entropy_pages * multiplier);
-	printf(" from %s you need", tmp_buf);
-	printf(" %.3f±%.3f [s]\n", sl->mean * multiplier / 1e9, sl->std / 1e9);
+	printf(" in %.3f±%.3f [s]\n", sl->mean * multiplier / 1e9, sl->std * multiplier / 1e9);
 }
 
 int parse_size_t(size_t *out, char *in) {
+	
 	if (sscanf(in, "%zu", out) == 1) {
 		return 0;
 	} else {
@@ -46,8 +53,8 @@ int parse_size_t(size_t *out, char *in) {
 // on success.
 int parse(struct config *params, int argc, char **argv) {
 
-	if (argc < 6){
-		printf("Missing arguments: fname[char *], page_size[size_t], seed_pages[size_t], entropy_pages[size_t], reps[size_t]\n");
+	if (argc < 8){
+		printf("Missing arguments: fname[char *], page_size[size_t], seed_pages[size_t], entropy_pages[size_t], reps[size_t]\n, key[hex string], iv[hex string]");
 		return 1;
 	}
 	params->fname = argv[1];
@@ -64,11 +71,22 @@ int parse(struct config *params, int argc, char **argv) {
 		printf("Invalid number of entropy_pages\n");
 		return 1;
 	}
-
 	params->reps = strtol(argv[5], NULL, 10);
 	if (params->reps < 1) {
 		printf("Invalid number of repetitions, must be positive\n");
 		return 1;
+	}
+	
+	params->key = malloc(KEY_SIZE*sizeof(byte));
+	if (-1 == parse_hex(params->key, KEY_SIZE, argv[6])){
+		printf("Invalid key character\n");
+		return 1;		
+	}
+	
+	params->iv = malloc(IV_SIZE*sizeof(byte));
+	if (-1 == parse_hex(params->iv, IV_SIZE, argv[7])){
+		printf("Invalid iv character\n");
+		return 1;		
 	}
 
 	printf("[i] info\n");
@@ -77,8 +95,31 @@ int parse(struct config *params, int argc, char **argv) {
 	printf("\tseed_pages:\t%zu\n", params->seed_pages);
 	printf("\tentropy_pages:\t%zu\n", params->entropy_pages);
 	printf("\treps:\t\t%zu\n", params->reps);
+	printf("\tkey:\t\t");
+        for (size_t i = 0; i < KEY_SIZE; i++)
+                printf("%02x", params->key[i]);
+	printf("\n");
+	printf("\tiv:\t\t");
+        for (size_t i = 0; i < IV_SIZE; i++)
+                printf("%02x", params->iv[i]);
+	printf("\n");
+
 
 	return 0;
+}
+
+void destroy_params(struct config *params) {
+
+	if (params != NULL){
+		if (params->key != NULL){
+			explicit_bzero(params->key, KEY_SIZE);
+			free(params->key);
+		}
+		if (params->iv != NULL){
+			explicit_bzero(params->iv, IV_SIZE);
+			free(params->iv);
+		}
+	}
 }
 
 int main(int argc, char **argv) {
@@ -96,9 +137,8 @@ int main(int argc, char **argv) {
 	char tmp_buf[tmp_buf_size];
 	// seed buffer
 	byte *seed = NULL;
-        //  sampling indexes
+        //  indexes generation
 	byte *indexes = NULL;
-	size_t indexes_size = 0;
 
 	// parse parameters
 	STATUS = parse(&params, argc, argv);
@@ -172,9 +212,9 @@ int main(int argc, char **argv) {
 	       tmp_buf,
 	       ((double)params.seed_pages * 100)/params.entropy_pages);
 	// allocate random indexes (each index is a 4-bytes bytestring)
-	indexes_size = sizeof(size_t) * params.seed_pages;
-	indexes = get_random_memory(indexes_size);
+	indexes = generate_indexes(params.key, params.iv, INDEX_SIZE, params.seed_pages);
 	if (indexes == NULL){
+		printf("[err] generation of indexes failed\n");
 		STATUS = 1;
 		goto clean;
 	}
@@ -196,13 +236,14 @@ clean:
 		free(seed);
 	}
 	if (indexes != NULL){
-		explicit_bzero(indexes, indexes_size);		
+		explicit_bzero(indexes, INDEX_SIZE * params.seed_pages);		
 		free(indexes);
 	}
 	if (f != NULL)
 		fclose(f);
 	if (obs != NULL)
 		free(obs);
+	destroy_params(&params);
 	
 	return STATUS;
 }

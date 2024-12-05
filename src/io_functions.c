@@ -45,7 +45,7 @@ int scan(FILE *f, byte *seed, size_t page_size, size_t pages){
 	return 0;
 }
 
-// Reads the i-th 6-byte index from the pool of indexes
+// Converts the i-th 6-byte index to a position  from the pool of indexes
 static inline size_t idx_to_pos(byte *indexes, const unsigned int i, const size_t tot_pages) {
 
 	unsigned int b = i * 4;
@@ -66,7 +66,8 @@ int random_read(FILE *f, byte *seed, byte *indexes, size_t page_size, size_t pag
 	unsigned long offset;
 	for (size_t i = 0; i < pages; i++){
 		// get the i-th offset
-		offset = idx_to_pos(indexes, i, tot_entropy_pages);
+		size_t idx = idx_to_pos(indexes, i, tot_entropy_pages);
+		offset = idx * page_size;
 		// fseek
 		if (-1 == fseek(f, offset, SEEK_SET)){
 			printf("random_read: fseek failed\n");			

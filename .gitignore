@@ -1,5 +1,5 @@
 *.o
-sampling
+sgen
 entropy
 main
 

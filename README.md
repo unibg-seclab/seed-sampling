@@ -13,3 +13,9 @@ make sampling; make run FNAME=entropy PAGE_SIZE=4096 SEED_PAGES=1024 ENTROPY_PAG
 
 This will create a file `entropy` full of zeros in the current directory.
 Remove the `entropy` when you want to change either `PAGE_SIZE` or `ENTROPY_PAGES`. 
+
+## Code style
+
+After cloning the repository run `git config --local core.hooksPath githooks`.
+This enables a script to format C source files with clangd at commit time.
+Formatted files must be manually re-added to the staging area.

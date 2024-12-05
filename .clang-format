@@ -1,3 +1,4 @@
-IndentWidth: 2
-TabWidth: 2
-ColumnLimit: 140
+BasedOnStyle: LLVM
+IndentWidth: 8
+ColumnLimit: 100
+AlignConsecutiveAssignments: true

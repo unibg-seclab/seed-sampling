@@ -29,37 +29,37 @@ size_t get_file_size(FILE *fp) {
 }
 
 byte *get_random_memory(size_t size) {
-	
-	byte *mem = malloc(size);
-	int fd = open("/dev/urandom", O_RDONLY);
 
-	if (size != read(fd, mem, size)){
-		free(mem);
-		mem = NULL;
-	}
-	close(fd);
-	
-	return mem;
+        byte *mem = malloc(size);
+        int fd    = open("/dev/urandom", O_RDONLY);
+
+        if (size != read(fd, mem, size)) {
+                free(mem);
+                mem = NULL;
+        }
+        close(fd);
+
+        return mem;
 }
 
-void pprint_size(char *buf, size_t buf_size, size_t size){
+void pprint_size(char *buf, size_t buf_size, size_t size) {
 
-	char *formatter;
-	double hr_size = 0;
-	if (size < 1024){
-		formatter = "B";
-		hr_size = size;
-	} else if (size < 1024 * 1024) {
-		formatter = "KiB";
-		hr_size = (double)size / 1024;
-	} else if (size < 1024 * 1024 * 1024){
-		formatter = "MiB";
-		hr_size = (double)size / (1024 * 1024);
-	} else {
-		formatter = "GiB";
-		hr_size = (double)size / (1024 * 1024 * 1024);
-	}
-	snprintf(buf, buf_size, "%3.1f %s", hr_size, formatter);
+        char *formatter;
+        double hr_size = 0;
+        if (size < 1024) {
+                formatter = "B";
+                hr_size   = size;
+        } else if (size < 1024 * 1024) {
+                formatter = "KiB";
+                hr_size   = (double)size / 1024;
+        } else if (size < 1024 * 1024 * 1024) {
+                formatter = "MiB";
+                hr_size   = (double)size / (1024 * 1024);
+        } else {
+                formatter = "GiB";
+                hr_size   = (double)size / (1024 * 1024 * 1024);
+        }
+        snprintf(buf, buf_size, "%3.1f %s", hr_size, formatter);
 }
 
 int is_valid_char(char *hex) {
@@ -67,7 +67,7 @@ int is_valid_char(char *hex) {
         byte b = tolower(*hex);
         if ((b >= '0' && b <= '9') || (b >= 'a' && b <= 'f'))
                 return 1;
-	
+
         return 0;
 }
 
@@ -97,6 +97,6 @@ int parse_hex(byte *secret, uint8_t secret_size, char *hex) {
                         return -1;
                 secret[i] = from_char_pair_to_byte(hex + 2 * i, hex + 2 * i + 1);
         }
-	
+
         return 0;
 }

@@ -4,9 +4,9 @@
 #include "types.h"
 
 struct stat_list {
-	double mean;
-	double std;
-	unsigned long long peak;
+        double mean;
+        double std;
+        unsigned long long peak;
 };
 
 unsigned long long peak(unsigned long long *obs, unsigned int n);

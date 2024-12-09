@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -140,7 +141,9 @@ int main(int argc, char **argv) {
         // seed buffer
         byte *seed = NULL;
         //  indexes generation
-        byte *indexes = NULL;
+        byte *indexes       = NULL;
+        size_t index_size   = 0;
+        size_t indexes_size = 0;
 
         // parse parameters
         STATUS = parse(&params, argc, argv);
@@ -207,8 +210,15 @@ int main(int argc, char **argv) {
         pprint_size(tmp_buf, tmp_buf_size, params.page_size);
         printf("[t] random_read %zu pages of %s (sampling: %2.5f%%)\n", params.seed_pages, tmp_buf,
                ((double)params.seed_pages * 100) / params.entropy_pages);
-        // allocate random indexes (each index is a 4-bytes bytestring)
-        indexes = generate_indexes(params.key, params.iv, INDEX_SIZE, params.seed_pages);
+        // determine the size of an index
+        index_size = get_index_size(params.entropy_pages);
+        if (index_size == 0)
+                goto clean;
+        indexes_size = get_indexes_size(index_size, params.seed_pages);
+        if (index_size == 0)
+                goto clean;
+        // allocate random indexes
+        indexes = generate_indexes(params.key, params.iv, indexes_size);
         if (indexes == NULL) {
                 printf("[err] generation of indexes failed\n");
                 STATUS = 1;
@@ -217,8 +227,8 @@ int main(int argc, char **argv) {
         // random reads
         for (int rep = 0; rep < params.reps; rep++) {
                 obs[rep] = MEASURE({
-                        if (-1 ==
-                            random_read(f, seed, indexes, params.page_size, params.seed_pages))
+                        if (-1 == random_read(f, seed, indexes, index_size, params.page_size,
+                                              params.seed_pages))
                                 goto clean;
                 });
                 compute_stats(&sl, obs, params.reps);
@@ -227,16 +237,16 @@ int main(int argc, char **argv) {
         estimate(&params, &sl, multiplier);
 
 clean:
+        if (f != NULL)
+                fclose(f);
         if (seed != NULL) {
                 explicit_bzero(seed, params.page_size * params.seed_pages);
                 free(seed);
         }
         if (indexes != NULL) {
-                explicit_bzero(indexes, INDEX_SIZE * params.seed_pages);
+                explicit_bzero(indexes, indexes_size);
                 free(indexes);
         }
-        if (f != NULL)
-                fclose(f);
         if (obs != NULL)
                 free(obs);
         destroy_params(&params);

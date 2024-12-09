@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -44,28 +45,40 @@ int scan(FILE *f, byte *seed, size_t page_size, size_t pages) {
         return 0;
 }
 
-// Converts the i-th 6-byte index to a position  from the pool of indexes
-static inline size_t idx_to_pos(byte *indexes, const unsigned int i, const size_t tot_pages) {
+// Converts the i-th index to a position  from the pool of indexes
+static inline size_t idx_to_pos(byte *indexes, size_t index_size, const unsigned int i) {
 
         unsigned int b = i * 4;
-        size_t pos     = (size_t)indexes[b] << 40;
-        pos += (size_t)indexes[b + 1] << 32;
-        pos += (size_t)indexes[b + 2] << 24;
-        pos += (size_t)indexes[b + 3] << 16;
-        pos += (size_t)indexes[b + 4] << 8;
-        pos += (size_t)indexes[b + 5];
+        size_t pos     = 0;
+        uint8_t power  = 0;
+        uint8_t j      = 0;
+        while (index_size > 8) {
+                pos += (size_t)indexes[b + j] << power;
+                index_size -= 8;
+                power += 8;
+                j += 1;
+        }
+        if (index_size > 0) {
+                byte mask = 255 >> (8 - index_size);
+                pos += (size_t)(indexes[b + j] & mask) << power;
+        }
 
-        return pos % tot_pages;
+        return pos;
 }
 
-int random_read(FILE *f, byte *seed, byte *indexes, size_t page_size, size_t pages) {
+int random_read(FILE *f, byte *seed, byte *indexes, size_t index_size, size_t page_size,
+                size_t pages) {
 
         const size_t tot_entropy_pages = get_file_size(f) / page_size;
+        if (log2(tot_entropy_pages) < index_size) {
+                printf("[err] not enough entropy pages\n");
+                return -1;
+        }
 
         unsigned long offset;
         for (size_t i = 0; i < pages; i++) {
                 // get the i-th offset
-                size_t idx = idx_to_pos(indexes, i, tot_entropy_pages);
+                size_t idx = idx_to_pos(indexes, index_size, i);
                 offset     = idx * page_size;
                 // fseek
                 if (-1 == fseek(f, offset, SEEK_SET)) {

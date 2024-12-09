@@ -38,4 +38,13 @@ void pprint_size(char *buf, size_t buf_size, size_t size);
 // success, -1 in case of error.
 int parse_hex(byte *secret, uint8_t secret_size, char *hex);
 
+// Returns the minimum number of bits required to address all the
+// `entropy_pages`. Returns 0 in case of error;
+size_t get_index_size(size_t entropy_pages);
+
+// Returns the minimum number of bytes required to store all the
+// indexes.
+size_t get_indexes_size(size_t index_size, size_t seed_pages);
+
+
 #endif

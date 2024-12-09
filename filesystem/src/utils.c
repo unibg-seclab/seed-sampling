@@ -1,5 +1,7 @@
 #include <ctype.h>
 #include <fcntl.h>
+#include <math.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,4 +101,18 @@ int parse_hex(byte *secret, uint8_t secret_size, char *hex) {
         }
 
         return 0;
+}
+
+size_t get_index_size(size_t entropy_pages) {
+
+        if (ceil(log2(entropy_pages)) != floor(log2(entropy_pages))) {
+                printf("[err] entropy_pages is not a power of 2\n");
+                return 0;
+        }
+        return (size_t)log2(entropy_pages);
+}
+
+size_t get_indexes_size(size_t index_size, size_t seed_pages) {
+
+        return (index_size * seed_pages) / 8 + 1;
 }

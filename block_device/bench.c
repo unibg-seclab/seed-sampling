@@ -108,6 +108,7 @@ error_t parse(int key, char *arg, struct argp_state *state) {
 
 void csv_header(FILE *fout) {
     fprintf(fout, "repetition,");  // Identifier of the repetition
+    fprintf(fout, "device,");      // Device
     fprintf(fout, "device_size,"); // Size of the device in bytes
     fprintf(fout, "page_size,");   // Size of the page in bytes
     fprintf(fout, "size,");        // Extracted size in bytes
@@ -115,9 +116,10 @@ void csv_header(FILE *fout) {
     fflush(fout);
 }
 
-void csv_line(FILE *fout, int repetition, size_t device_size, int page_size,
-              size_t size, double time) {
+void csv_line(FILE *fout, int repetition, const char *device,
+              size_t device_size, int page_size, size_t size, double time) {
     fprintf(fout, "%d,", repetition);
+    fprintf(fout, "%s,", device);
     fprintf(fout, "%ld,", device_size);
     fprintf(fout, "%d,", page_size);
     fprintf(fout, "%ld,", size);
@@ -190,13 +192,15 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
         // random number generator
         for (int rep = 0; rep < reps; rep++) {
             ms = MEASURE(read_random_pages(q, time(NULL), page_size, pages, buf));
-            csv_line(fout, rep, device_size, page_size, size, ms);
+            csv_line(fout, rep, device, device_size, page_size, size, ms);
         }
 
 unmap:
         blkio_unmap_mem_region(b, &mem_region);
         blkio_free_mem_region(b, &mem_region);
     }
+
+    printf("\n"); // separate tests on different devices with a new line
 
 clean:
     blkio_destroy(&b);

@@ -8,22 +8,20 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('input', metavar='INPUT', nargs='+',
                     help='list of path to the benchmark results')
-parser.add_argument('output', metavar='OUTPUT',
-                    help='path where to store data visualizations')
+# parser.add_argument('output', metavar='OUTPUT',
+#                     help='path where to store data visualizations')
 args = parser.parse_args()
 
 data = args.input
-destination = args.output
+# destination = args.output
 
 for path in data:
-    print(f"\n[*] Read {path}")
+    print(f"[*] Read {path}")
     df = pd.read_csv(path)
 
-    # TODO: Extract device and sizes
+    res = df[["device", "size", "time"]].groupby(["device", "size"]).describe()
 
-    # TODO: For each device and size pair showcase descriptive results
-    df.describe()
-    # TODO: For each device and size pair produce box plots
-    # TODO: Box plots (one per device)
-        
+    print(f"{res}\n")
+
+    # TODO: Box plots (one per device)    
     # TODO: Classic plots comparing all the devices (one per machine)

@@ -18,6 +18,9 @@ int read_random_pages(struct blkioq *q, unsigned int seed, int page_size,
         // TODO: Use a CSPRNG for the random number generation (e.g., ChaCha20)
         // TODO: Avoid bias towards low indexes (i.e., do not use modulo
         // operations)
+        // SOLUTIONS: Regenerate numbers that exceed the #pages in the device or
+        // use the 1st power of 2 that stays within the #pages and ignore the
+        // rest of the device
         blkioq_read(q, page_size * (rand() % pages), buf + page_size * i,
                     page_size, NULL, 0);
     }

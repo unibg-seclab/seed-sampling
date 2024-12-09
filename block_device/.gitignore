@@ -7,3 +7,6 @@
 # targets
 bench
 keygen
+
+# graphs
+*.pdf

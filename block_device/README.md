@@ -42,10 +42,10 @@ make bench
 
 ### Usage
 
-```sheel
+```shell
 $ ./bench --help
-Usage: bench [OPTION...] DEVICE SIZE OUTPUT
-bench -- benchmark the extraction of bytes from a block device
+Usage: bench [OPTION...] DEVICES SIZES OUTPUT
+bench -- benchmark the extraction of bytes from block devices
 
   -r, --repetitions=INTEGER  Number of times that the extraction of the size is
                              done

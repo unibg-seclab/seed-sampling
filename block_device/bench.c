@@ -24,10 +24,10 @@ static struct argp_option options[] = {
 
 error_t parse(int, char *, struct argp_state *);
 
-const char args_doc[] = "DEVICE SIZE OUTPUT";
+const char args_doc[] = "DEVICES SIZES OUTPUT";
 
 static struct argp argp = {options, parse, args_doc,
-                           "bench -- benchmark the extraction of bytes from a block device"};
+                           "bench -- benchmark the extraction of bytes from block devices"};
 
 struct cli_args_t {
     char **devices;

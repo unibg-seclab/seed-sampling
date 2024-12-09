@@ -1,0 +1,9 @@
+# vscode
+.vscode
+
+# object files
+*.o
+
+# targets
+bench
+keygen

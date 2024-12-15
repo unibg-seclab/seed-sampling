@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
     int page_size;
     size_t buf_size;
     uint64_t pages;
+    uint64_t tot_pages;
     struct blkio_mem_region mem_region;
     void *buf;
     struct blkioq *q;
@@ -111,6 +112,7 @@ int main(int argc, char **argv) {
     page_size = MAX(opt_io_alignment, opt_buf_alignment);
     buf_size = size + (size % page_size ? page_size - size % page_size : 0);
     pages = buf_size / page_size;
+    tot_pages = device_size / page_size;
 
     if (args.verbose) {
         printf("Disk %s: %.2f GiB, %ld bytes, %ld sectors\n", args.device,
@@ -139,7 +141,8 @@ int main(int argc, char **argv) {
            (double) buf_size / (1UL << 30), buf_size, pages);
     printf("Seed: %d\n", args.seed);
     printf("Finished in %.2f ms\n",
-           MEASURE(read_random_pages(q, args.seed, page_size, pages, buf)));
+           MEASURE(read_random_pages(q, args.seed, page_size, pages, tot_pages,
+                                     buf)));
 
     printf("\nWrite: %.2f GiB, %ld bytes\n", (double) size / (1UL << 30),
            size);

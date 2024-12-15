@@ -136,6 +136,7 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
     int opt_buf_alignment;
     int max_queues;
     int page_size;
+    uint64_t tot_pages;
     size_t size;
     size_t buf_size;
     uint64_t pages;
@@ -155,6 +156,7 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
     OK(blkio_get_int(b, "max-queues", &max_queues));
 
     page_size = MAX(opt_io_alignment, opt_buf_alignment);
+    tot_pages = device_size / page_size;
 
     printf("Disk %s: %.2f GiB, %ld bytes, %ld sectors\n", device,
         (double) device_size / (1UL << 30), device_size,
@@ -191,7 +193,8 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
         // This might be due to the bias towards low indexes of the current
         // random number generator
         for (int rep = 0; rep < reps; rep++) {
-            ms = MEASURE(read_random_pages(q, time(NULL), page_size, pages, buf));
+            ms = MEASURE(read_random_pages(q, time(NULL), page_size, pages,
+                                           tot_pages, buf));
             csv_line(fout, rep, device, device_size, page_size, size, ms);
         }
 

@@ -9,7 +9,7 @@
 #include <blkio.h>
 
 int read_random_pages(struct blkioq *q, unsigned int seed, int page_size,
-                      uint64_t pages, void *buf) {
+                      uint64_t pages, uint64_t tot_pages, void *buf) {
     struct blkio_completion *completions;
     int ret;
 
@@ -21,7 +21,7 @@ int read_random_pages(struct blkioq *q, unsigned int seed, int page_size,
         // SOLUTIONS: Regenerate numbers that exceed the #pages in the device or
         // use the 1st power of 2 that stays within the #pages and ignore the
         // rest of the device
-        blkioq_read(q, page_size * (rand() % pages), buf + page_size * i,
+        blkioq_read(q, page_size * (rand() % tot_pages), buf + page_size * i,
                     page_size, NULL, 0);
     }
 

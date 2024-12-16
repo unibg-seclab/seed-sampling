@@ -14,12 +14,15 @@ const char *argp_program_version = "1.0.0";
 const char *argp_program_bug_address = "<seclab@unibg.it>";
 
 enum args_key {
-    ARG_KEY_REPS = 'r',
+    ARG_KEY_RUNS = 'r',
+    ARG_KEY_WARM_RUNS = 'w',
 };
 
 static struct argp_option options[] = {
-    {"repetitions", ARG_KEY_REPS, "INTEGER", 0,
-     "Number of times that the extraction of the size is done"},
+    {"runs", ARG_KEY_RUNS, "INTEGER", 0,
+     "Number of test runs for each device and size configuration (default: 100)"},
+    {"warm-runs", ARG_KEY_WARM_RUNS, "INTEGER", 0,
+     "Number of test runs to warm-up the test environment (default: 10)"},
     {NULL},
 };
 
@@ -35,8 +38,9 @@ struct cli_args_t {
     int num_devices;
     int num_sizes;
     const char *output;
-    int reps;
+    int test_runs;
     size_t *sizes;
+    int warm_test_runs;
 };
 
 int parse_devices(char *arg, char **devices_ptr[]) {
@@ -80,8 +84,11 @@ error_t parse(int key, char *arg, struct argp_state *state) {
     char *token;
 
     switch (key) {
-    case ARG_KEY_REPS:
-        arguments->reps = strtol(arg, NULL, 10);
+    case ARG_KEY_RUNS:
+        arguments->test_runs = strtol(arg, NULL, 10);
+        break;
+    case ARG_KEY_WARM_RUNS:
+        arguments->warm_test_runs = strtol(arg, NULL, 10);
         break;
     case ARGP_KEY_ARG:
         // 3 input argument: devices, sizes, output
@@ -108,7 +115,7 @@ error_t parse(int key, char *arg, struct argp_state *state) {
 }
 
 void csv_header(FILE *fout) {
-    fprintf(fout, "repetition,");  // Identifier of the repetition
+    fprintf(fout, "run,");  // Identifier of the repetition
     fprintf(fout, "device,");      // Device
     fprintf(fout, "device_size,"); // Size of the device in bytes
     fprintf(fout, "page_size,");   // Size of the page in bytes
@@ -129,7 +136,7 @@ void csv_line(FILE *fout, int repetition, const char *device,
 }
 
 int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
-                 int reps) {
+                 int warm_test_runs, int test_runs) {
     size_t seed_size;
     unsigned char* seed;
     struct blkio *b;
@@ -193,16 +200,24 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
         printf("Benchmark: %.2f GiB, %zu bytes, %ld pages\n",
                (double) buf_size / (1UL << 30), buf_size, pages);
 
-        // NOTE: Preliminary results showcase a slow 1st run followed by fast
-        // runs. Specifically, the execution time of the 1st run is 3/4 times
-        // higher than the other runs.
-        for (int rep = 0; rep < reps; rep++) {
+        // NOTE: Preliminary results show the initial runs are slower than the
+        // following ones due to the device behavior. So, to measure the
+        // expected performance of the system when operational we run a few warm
+        // test runs.
+        for (int run = 0; run < warm_test_runs; run++) {
+            // Use an unpredictable sequence of bytes for the seed
+            randombytes_buf(seed, seed_size);
+
+            read_random_pages(q, seed, page_size, pages, tot_pages, buf);
+        }
+
+        for (int run = 0; run < test_runs; run++) {
             // Use an unpredictable sequence of bytes for the seed
             randombytes_buf(seed, seed_size);
 
             ms = MEASURE(read_random_pages(q, seed, page_size, pages, tot_pages,
                                            buf));
-            csv_line(fout, rep, device, device_size, page_size, size, ms);
+            csv_line(fout, run, device, device_size, page_size, size, ms);
         }
 
 unmap:
@@ -226,8 +241,9 @@ int main(int argc, char **argv) {
     struct cli_args_t args = {
         .devices = NULL,
         .output = NULL,
-        .reps = 100,
+        .test_runs = 100,
         .sizes = NULL,
+        .warm_test_runs = 10,
     };
 
     if (argp_parse(&argp, argc, argv, 0, 0, &args)) {
@@ -246,7 +262,8 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < args.num_devices; i++) {
         exit_status = bench_device(fout, args.devices[i], args.sizes,
-                                   args.num_sizes, args.reps);
+                                   args.num_sizes, args.warm_test_runs,
+                                   args.test_runs);
         if (exit_status)
             break;
     }

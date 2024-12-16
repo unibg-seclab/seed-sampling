@@ -59,7 +59,13 @@ for path in data:
         # Group by sizes is a problem due to how the time scale grows with the
         # size of the extracted bytes
         one_device.boxplot(column=['time'], by=['size_in_mib'])
-        device_name = os.path.basename(device)
+        plt.grid(which="major", linestyle='dashed', linewidth=0.3)
+        plt.grid(which="minor", linestyle='dotted', linewidth=0.1)
+        plt.suptitle(f'Hostname: {hostname}')
+        plt.title(MACHINES[hostname][device]['name'])
+        plt.xlabel('Size [MiB]')
+        plt.ylabel('Time [ms]')
+        plt.yscale('log')
         plt.savefig(f'{destination}/boxplots-{hostname}-{device_name}.pdf',
                     bbox_inches='tight', pad_inches=0)
         plt.close()
@@ -70,6 +76,12 @@ for path in data:
             one_size = one_device[one_device['size_in_mib'] == size]
 
             one_size.boxplot(column=['time'])
+            plt.grid(visible=False)
+            plt.suptitle(f'Hostname: {hostname}')
+            plt.title(MACHINES[hostname][device]['name'])
+            plt.xlabel('Size [MiB]')
+            plt.xticks(ticks=[1], labels=[str(size)])
+            plt.ylabel('Time [ms]')
             plt.savefig(f'{destination}/boxplots-{hostname}-{device_name}-{size}.pdf',
                         bbox_inches='tight', pad_inches=0)
             plt.close()
@@ -96,7 +108,7 @@ for path in data:
     ncol=2
     legend = plt.legend(labels, frameon=False, mode='expand',
                         bbox_to_anchor=(x0, y0, width, height), ncol=ncol,
-                        handlelength=1.5, loc="lower left")
+                        handlelength=1.5, loc='lower left')
 
     plt.xlabel('Size [MiB]')
     plt.xscale('log')

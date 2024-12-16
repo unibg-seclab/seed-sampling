@@ -8,20 +8,25 @@
 
 #include <blkio.h>
 
-int read_random_pages(struct blkioq *q, unsigned int seed, int page_size,
+#include "prng.h"
+
+int read_random_pages(struct blkioq *q, unsigned char *seed, int page_size,
                       uint64_t pages, uint64_t tot_pages, void *buf) {
+    struct random_ctx ctx;
+    uint64_t page_id;
     struct blkio_completion *completions;
     int ret;
 
-    srand(seed);
+    init_random_ctx(&ctx, seed, pages, tot_pages);
     for (int i = 0; i < pages; i++) {
-        // TODO: Use a CSPRNG for the random number generation (e.g., ChaCha20)
-        // TODO: Avoid bias towards low indexes (i.e., do not use modulo
-        // operations)
-        // SOLUTIONS: Regenerate numbers that exceed the #pages in the device or
-        // use the 1st power of 2 that stays within the #pages and ignore the
-        // rest of the device
-        blkioq_read(q, page_size * (rand() % tot_pages), buf + page_size * i,
+        ret = get_random_number(&ctx, &page_id);
+        if (ret) {
+            fprintf(stderr,
+                    "get_random_number: The context run out of bytes\n");
+            goto free;
+        }
+
+        blkioq_read(q, page_size * page_id, buf + page_size * i,
                     page_size, NULL, 0);
     }
 
@@ -48,6 +53,7 @@ int read_random_pages(struct blkioq *q, unsigned int seed, int page_size,
 
 free:
     free(completions);
+    free_random_ctx(&ctx);
     return ret;
 }
 

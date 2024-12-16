@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <blkio.h>
+#include <sodium.h>
 
 #include "io.h"
 #include "utils.h"
@@ -120,15 +121,17 @@ void csv_line(FILE *fout, int repetition, const char *device,
               size_t device_size, int page_size, size_t size, double time) {
     fprintf(fout, "%d,", repetition);
     fprintf(fout, "%s,", device);
-    fprintf(fout, "%ld,", device_size);
+    fprintf(fout, "%zu,", device_size);
     fprintf(fout, "%d,", page_size);
-    fprintf(fout, "%ld,", size);
+    fprintf(fout, "%zu,", size);
     fprintf(fout, "%f\n", time);
     fflush(fout);
 }
 
 int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
                  int reps) {
+    size_t seed_size;
+    unsigned char* seed;
     struct blkio *b;
     int exit_status = EXIT_SUCCESS;
     size_t device_size;
@@ -145,6 +148,9 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
     struct blkioq *q;
     double ms;
 
+    seed_size = randombytes_seedbytes();
+    seed = malloc(seed_size);
+
     OK(blkio_create("io_uring", &b));
     OK(blkio_set_str(b, "path", device));
 
@@ -158,7 +164,7 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
     page_size = MAX(opt_io_alignment, opt_buf_alignment);
     tot_pages = device_size / page_size;
 
-    printf("Disk %s: %.2f GiB, %ld bytes, %ld sectors\n", device,
+    printf("Disk %s: %.2f GiB, %zu bytes, %zu sectors\n", device,
         (double) device_size / (1UL << 30), device_size,
         device_size / opt_io_alignment);
     printf("Optimal I/O alignment: %d bytes\n", opt_io_alignment);
@@ -184,17 +190,18 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
             goto unmap;
         }
 
-        printf("Benchmark: %.2f GiB, %ld bytes, %ld pages\n",
+        printf("Benchmark: %.2f GiB, %zu bytes, %ld pages\n",
                (double) buf_size / (1UL << 30), buf_size, pages);
 
         // NOTE: Preliminary results showcase a slow 1st run followed by fast
         // runs. Specifically, the execution time of the 1st run is 3/4 times
         // higher than the other runs.
-        // This might be due to the bias towards low indexes of the current
-        // random number generator
         for (int rep = 0; rep < reps; rep++) {
-            ms = MEASURE(read_random_pages(q, time(NULL), page_size, pages,
-                                           tot_pages, buf));
+            // Use an unpredictable sequence of bytes for the seed
+            randombytes_buf(seed, seed_size);
+
+            ms = MEASURE(read_random_pages(q, seed, page_size, pages, tot_pages,
+                                           buf));
             csv_line(fout, rep, device, device_size, page_size, size, ms);
         }
 
@@ -207,6 +214,7 @@ unmap:
 
 clean:
     blkio_destroy(&b);
+    free(seed);
     return exit_status;
 }
 

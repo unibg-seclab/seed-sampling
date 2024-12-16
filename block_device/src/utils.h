@@ -45,5 +45,6 @@
     } while (0)
 
 int get_num_tokens(char *arg, const char *delimiter);
+int parse_hex(char *hex, unsigned char *buf, size_t size);
 
 #endif /* UTILS_H */

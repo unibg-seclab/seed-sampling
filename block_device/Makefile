@@ -5,7 +5,7 @@ OBJECTS = $(SOURCES:%.c=%.o)
 
 CC = gcc
 CFLAGS = -O3 -msse2 -msse -march=native -maes -Wno-cpp -Iinclude -Isrc
-LDLIBS = -lblkio
+LDLIBS = -lblkio -lm -lsodium
 
 # ------------ Generic building
 

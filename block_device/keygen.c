@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <blkio.h>
+#include <sodium.h>
 
 #include "io.h"
 #include "utils.h"
@@ -33,16 +34,22 @@ static struct argp argp = {options, parse, args_doc,
 struct cli_args_t {
     const char* device;
     const char* output;
-    int seed;
+    unsigned char *seed;
     size_t size;
     bool verbose;
 };
 
 error_t parse(int key, char *arg, struct argp_state *state) {
+    size_t seed_size;
     struct cli_args_t *arguments = state->input;
+
     switch (key) {
     case ARG_KEY_SEED:
-        arguments->seed = strtol(arg, NULL, 10);
+        seed_size = randombytes_seedbytes();
+        arguments->seed = malloc(seed_size);
+        if (parse_hex(arg, arguments->seed, seed_size) != seed_size)
+            argp_error(state, "seed must be an hexadecimal string of %zu bytes",
+                       seed_size);
         break;
     case ARG_KEY_VERBOSE:
         arguments->verbose = true;
@@ -72,6 +79,7 @@ error_t parse(int key, char *arg, struct argp_state *state) {
 }
 
 int main(int argc, char **argv) {
+    size_t seed_size;
     struct blkio *b;
     int exit_status = EXIT_SUCCESS;
     size_t size;
@@ -90,13 +98,19 @@ int main(int argc, char **argv) {
     struct cli_args_t args = {
         .device = NULL,
         .output = NULL,
-        .seed = time(NULL),
         .size = 0,
         .verbose = false,
     };
 
-    if (argp_parse(&argp, argc, argv, 0, 0, &args))
-        return EXIT_FAILURE;
+    // By default use an unpredictable sequence of bytes for the seed
+    seed_size = randombytes_seedbytes();
+    args.seed = malloc(seed_size);
+    randombytes_buf(args.seed, seed_size);
+
+    if (argp_parse(&argp, argc, argv, 0, 0, &args)) {
+        exit_status = EXIT_FAILURE;
+        goto free;
+    }
     
     OK(blkio_create("io_uring", &b));
     OK(blkio_set_str(b, "path", args.device));
@@ -115,7 +129,7 @@ int main(int argc, char **argv) {
     tot_pages = device_size / page_size;
 
     if (args.verbose) {
-        printf("Disk %s: %.2f GiB, %ld bytes, %ld sectors\n", args.device,
+        printf("Disk %s: %.2f GiB, %zu bytes, %zu sectors\n", args.device,
             (double) device_size / (1UL << 30), device_size,
             device_size / opt_io_alignment);
         printf("Optimal I/O alignment: %d bytes\n", opt_io_alignment);
@@ -137,14 +151,18 @@ int main(int argc, char **argv) {
 
     if (args.verbose) printf("\n");
 
-    printf("Read: %.2f GiB, %ld bytes, %ld pages\n",
+    printf("Read: %.2f GiB, %zu bytes, %ld pages\n",
            (double) buf_size / (1UL << 30), buf_size, pages);
-    printf("Seed: %d\n", args.seed);
+    printf("Seed: ");
+    for (int i = 0; i < seed_size; i++) {
+        printf("%02x", args.seed[i]);
+    }
+    printf("\n");
     printf("Finished in %.2f ms\n",
            MEASURE(read_random_pages(q, args.seed, page_size, pages, tot_pages,
                                      buf)));
 
-    printf("\nWrite: %.2f GiB, %ld bytes\n", (double) size / (1UL << 30),
+    printf("\nWrite: %.2f GiB, %zu bytes\n", (double) size / (1UL << 30),
            size);
     printf("Finished in %.2f ms\n", MEASURE(write(args.output, buf, size)));
 
@@ -153,5 +171,7 @@ unmap:
     blkio_free_mem_region(b, &mem_region);
 clean:
     blkio_destroy(&b);
+free:
+    free(args.seed);
     return exit_status;
 }

@@ -11,15 +11,17 @@ MACHINES = {
         '/dev/nvme0n1': {'name': 'Samsung SSD 990 PRO (2 TB)', 'color': 'tab:blue', 'marker': 'v'},
     },
     'spartan': {
-        '/dev/nvme0n1': {'name': 'Samsung SSD 970 EVO Plus (2 TB)', 'color': 'tab:orange', 'marker': '^'},
-        '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'tab:green', 'marker': '1'},
-        '/dev/sdb': {'name': 'Samsung SSD 860 (500 GB)', 'color': 'tab:red', 'marker': '2'},
+        # NOTE: Device are ordered by their perforamance profile (slowest to fastest)
+        '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'indigo', 'marker': '1'},
+        '/dev/sdb': {'name': 'Samsung SSD 860 (500 GB)', 'color': 'mediumpurple', 'marker': '2'},
+        '/dev/nvme0n1': {'name': 'Samsung SSD 970 EVO Plus (2 TB)', 'color': 'dodgerblue', 'marker': '^'},
     },
     'zudomon': {
-        '/dev/nvme0n1': {'name': 'Samsung SSD 970 PRO (1 TB)', 'color': 'tab:purple', 'marker': '<'},
-        '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'tab:brown', 'marker': '3'},
-        '/dev/sdb': {'name': 'ST1000VX000-1ES1 (1 TB)', 'color': 'tab:pink', 'marker': 's'},
-        '/dev/sdc': {'name': 'ST1000VX000-1ES1 (1 TB)', 'color': 'tab:grey', 'marker': 'D'},
+        # NOTE: Device are ordered by their perforamance profile (slowest to fastest)
+        '/dev/sdb': {'name': 'ST1000VX000-1ES1 (1 TB)', 'color': 'darkorange', 'marker': 's'},
+        '/dev/sdc': {'name': 'ST1000VX000-1ES1 (1 TB)', 'color': 'peachpuff', 'marker': 'D'},
+        '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'violet', 'marker': '3'},
+        '/dev/nvme0n1': {'name': 'Samsung SSD 970 PRO (1 TB)', 'color': 'deepskyblue', 'marker': '<'},
     },
 }
 
@@ -48,7 +50,7 @@ for path in data:
     hostname, _ = os.path.splitext(os.path.basename(path))
 
     # Box plots
-    devices = df['device'].unique()
+    devices = MACHINES[hostname].keys() # df['device'].unique()
     for device in devices:
         one_device = df[df['device'] == device]
 
@@ -62,19 +64,22 @@ for path in data:
                     bbox_inches='tight', pad_inches=0)
         plt.close()
 
-        # # The outliers are still a problem
-        # sizes = one_device['size_in_mib'].unique()
-        # for size in sizes:
-        #     one_size = one_device[one_device['size_in_mib'] == size]
+        # Alternative without groups
+        sizes = one_device['size_in_mib'].unique()
+        for size in sizes:
+            one_size = one_device[one_device['size_in_mib'] == size]
 
-        #     one_size.boxplot(column=['time'])
-        #     plt.savefig(f'{destination}/boxplots-{hostname}-{device_name}-{size}.pdf',
-        #                 bbox_inches='tight', pad_inches=0)
-        #     plt.close()
+            one_size.boxplot(column=['time'])
+            plt.savefig(f'{destination}/boxplots-{hostname}-{device_name}-{size}.pdf',
+                        bbox_inches='tight', pad_inches=0)
+            plt.close()
 
     # Classic plots comparing all the devices (one per machine)
-    devices = df['device'].unique()
+    devices = MACHINES[hostname].keys() # df['device'].unique()
     for device in devices:
+        if device not in MACHINES[hostname]:
+            continue
+
         one_device = df[df['device'] == device]
         line = one_device.groupby('size_in_mib').agg({'time': ['count', 'mean', 'std']})
         xs = line.index
@@ -86,11 +91,17 @@ for path in data:
                      color=MACHINES[hostname][device]['color'],
                      marker=MACHINES[hostname][device]['marker'], markersize=8)
 
+    labels = [MACHINES[hostname][device]['name'] for device in devices]
+    x0, y0, width, height = -0.04, 1.02, 1.08, 0.2
+    ncol=2
+    legend = plt.legend(labels, frameon=False, mode='expand',
+                        bbox_to_anchor=(x0, y0, width, height), ncol=ncol,
+                        handlelength=1.5, loc="lower left")
+
     plt.xlabel('Size [MiB]')
     plt.xscale('log')
     plt.ylabel('Average time [ms]')
-    plt.ylim(bottom=0)
-    # plt.yscale('log')
+    plt.yscale('log')
     plt.savefig(f'{destination}/plot-{hostname}.pdf',
                 bbox_inches='tight', pad_inches=0)
     plt.close()

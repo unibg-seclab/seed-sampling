@@ -13,11 +13,14 @@ const char *argp_program_version = "1.0.0";
 const char *argp_program_bug_address = "<seclab@unibg.it>";
 
 enum args_key {
+    ARG_KEY_BYPASS_PAGE_CACHE = 'b',
     ARG_KEY_SEED = 's',
     ARG_KEY_VERBOSE = 'v',
 };
 
 static struct argp_option options[] = {
+    {"bypass-page-cache", ARG_KEY_BYPASS_PAGE_CACHE, NULL, 0,
+     "Bypass the page cache"},
     {"seed", ARG_KEY_SEED, "INTEGER", 0,
      "Seed to initialize the random number generation"},
     {"verbose", ARG_KEY_VERBOSE, NULL, 0, "Verbose mode"},
@@ -32,6 +35,7 @@ static struct argp argp = {options, parse, args_doc,
                            "keygen -- extract bytes from a block device"};
 
 struct cli_args_t {
+    bool bypass_page_cache;
     const char* device;
     const char* output;
     unsigned char *seed;
@@ -44,6 +48,9 @@ error_t parse(int key, char *arg, struct argp_state *state) {
     struct cli_args_t *arguments = state->input;
 
     switch (key) {
+    case ARG_KEY_BYPASS_PAGE_CACHE:
+        arguments->bypass_page_cache = true;
+        break;
     case ARG_KEY_SEED:
         seed_size = randombytes_seedbytes();
         arguments->seed = malloc(seed_size);
@@ -113,6 +120,7 @@ int main(int argc, char **argv) {
     }
     
     OK(blkio_create("io_uring", &b));
+    OK(blkio_set_bool(b, "direct", args.bypass_page_cache));
     OK(blkio_set_str(b, "path", args.device));
     size = args.size;
 

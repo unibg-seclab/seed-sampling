@@ -14,11 +14,14 @@ const char *argp_program_version = "1.0.0";
 const char *argp_program_bug_address = "<seclab@unibg.it>";
 
 enum args_key {
+    ARG_KEY_BYPASS_PAGE_CACHE = 'b',
     ARG_KEY_RUNS = 'r',
     ARG_KEY_WARM_RUNS = 'w',
 };
 
 static struct argp_option options[] = {
+    {"bypass-page-cache", ARG_KEY_BYPASS_PAGE_CACHE, NULL, 0,
+     "Bypass the page cache"},
     {"runs", ARG_KEY_RUNS, "INTEGER", 0,
      "Number of test runs for each device and size configuration (default: 100)"},
     {"warm-runs", ARG_KEY_WARM_RUNS, "INTEGER", 0,
@@ -34,6 +37,7 @@ static struct argp argp = {options, parse, args_doc,
                            "bench -- benchmark the extraction of bytes from block devices"};
 
 struct cli_args_t {
+    bool bypass_page_cache;
     char **devices;
     int num_devices;
     int num_sizes;
@@ -84,6 +88,9 @@ error_t parse(int key, char *arg, struct argp_state *state) {
     char *token;
 
     switch (key) {
+    case ARG_KEY_BYPASS_PAGE_CACHE:
+        arguments->bypass_page_cache = true;
+        break;
     case ARG_KEY_RUNS:
         arguments->test_runs = strtol(arg, NULL, 10);
         break;
@@ -115,19 +122,22 @@ error_t parse(int key, char *arg, struct argp_state *state) {
 }
 
 void csv_header(FILE *fout) {
-    fprintf(fout, "run,");  // Identifier of the repetition
-    fprintf(fout, "device,");      // Device
-    fprintf(fout, "device_size,"); // Size of the device in bytes
-    fprintf(fout, "page_size,");   // Size of the page in bytes
-    fprintf(fout, "size,");        // Extracted size in bytes
-    fprintf(fout, "time\n");       // Execution time in ms
+    fprintf(fout, "run,");               // Identifier of the repetition
+    fprintf(fout, "device,");            // Device
+    fprintf(fout, "bypass_page_cache,"); // Bypass page cache
+    fprintf(fout, "device_size,");       // Size of the device in bytes
+    fprintf(fout, "page_size,");         // Size of the page in bytes
+    fprintf(fout, "size,");              // Extracted size in bytes
+    fprintf(fout, "time\n");             // Execution time in ms
     fflush(fout);
 }
 
 void csv_line(FILE *fout, int repetition, const char *device,
-              size_t device_size, int page_size, size_t size, double time) {
+              bool bypass_page_cache, size_t device_size, int page_size,
+              size_t size, double time) {
     fprintf(fout, "%d,", repetition);
     fprintf(fout, "%s,", device);
+    fprintf(fout, "%s,", bypass_page_cache ? "true" : "false");
     fprintf(fout, "%zu,", device_size);
     fprintf(fout, "%d,", page_size);
     fprintf(fout, "%zu,", size);
@@ -135,8 +145,9 @@ void csv_line(FILE *fout, int repetition, const char *device,
     fflush(fout);
 }
 
-int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
-                 int warm_test_runs, int test_runs) {
+int bench_device(FILE *fout, const char* device, bool bypass_page_cache,
+                 size_t *sizes, int num_sizes, int warm_test_runs,
+                 int test_runs) {
     size_t seed_size;
     unsigned char* seed;
     struct blkio *b;
@@ -159,6 +170,7 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
     seed = malloc(seed_size);
 
     OK(blkio_create("io_uring", &b));
+    OK(blkio_set_bool(b, "direct", bypass_page_cache));
     OK(blkio_set_str(b, "path", device));
 
     OK(blkio_connect(b));
@@ -217,7 +229,8 @@ int bench_device(FILE *fout, const char* device, size_t *sizes, int num_sizes,
 
             ms = MEASURE(read_random_pages(q, seed, page_size, pages, tot_pages,
                                            buf));
-            csv_line(fout, run, device, device_size, page_size, size, ms);
+            csv_line(fout, run, device, bypass_page_cache, device_size,
+                     page_size, size, ms);
         }
 
 unmap:
@@ -261,7 +274,8 @@ int main(int argc, char **argv) {
     csv_header(fout);
 
     for (int i = 0; i < args.num_devices; i++) {
-        exit_status = bench_device(fout, args.devices[i], args.sizes,
+        exit_status = bench_device(fout, args.devices[i],
+                                   args.bypass_page_cache, args.sizes,
                                    args.num_sizes, args.warm_test_runs,
                                    args.test_runs);
         if (exit_status)

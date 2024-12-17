@@ -20,7 +20,7 @@ enum args_key {
 
 static struct argp_option options[] = {
     {"bypass-page-cache", ARG_KEY_BYPASS_PAGE_CACHE, NULL, 0,
-     "Bypass the page cache"},
+     "Bypass the page cache of the device"},
     {"seed", ARG_KEY_SEED, "INTEGER", 0,
      "Seed to initialize the random number generation"},
     {"verbose", ARG_KEY_VERBOSE, NULL, 0, "Verbose mode"},

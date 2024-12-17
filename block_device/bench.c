@@ -21,7 +21,7 @@ enum args_key {
 
 static struct argp_option options[] = {
     {"bypass-page-cache", ARG_KEY_BYPASS_PAGE_CACHE, NULL, 0,
-     "Bypass the page cache"},
+     "Bypass the page cache of the device"},
     {"runs", ARG_KEY_RUNS, "INTEGER", 0,
      "Number of test runs for each device and size configuration (default: 100)"},
     {"warm-runs", ARG_KEY_WARM_RUNS, "INTEGER", 0,

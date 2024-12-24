@@ -4,9 +4,12 @@ import argparse
 import math
 import os
 
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 
+matplotlib.rc('font', size=18, family=['NewComputerModern08', 'sans-serif'])
+matplotlib.rc('pdf', fonttype=42)
 
 MACHINES = {
     'anthem': {
@@ -16,7 +19,7 @@ MACHINES = {
         # NOTE: Device are ordered by their perforamance profile (slowest to fastest)
         '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'indigo', 'marker': '1'},
         '/dev/sdb': {'name': 'Samsung SSD 860 (500 GB)', 'color': 'mediumpurple', 'marker': '2'},
-        '/dev/nvme0n1': {'name': 'Samsung SSD 970 EVO Plus (2 TB)', 'color': 'dodgerblue', 'marker': '^'},
+        '/dev/nvme0n1': {'name': 'Samsung SSD 970 EVO+ (2 TB)', 'color': 'dodgerblue', 'marker': '^'},
     },
     'zudomon': {
         # NOTE: Device are ordered by their perforamance profile (slowest to fastest)
@@ -68,6 +71,7 @@ for path in data:
         plt.xlabel('Size [MiB]')
         plt.ylabel('Time [ms]')
         plt.yscale('log')
+        plt.tight_layout(rect=[0, 0, 1, 1.09])
         plt.savefig(f'{destination}/boxplots-{hostname}-{device_name}.pdf',
                     bbox_inches='tight', pad_inches=0)
         plt.close()
@@ -84,11 +88,13 @@ for path in data:
             plt.xlabel('Size [MiB]')
             plt.xticks(ticks=[1], labels=[str(size)])
             plt.ylabel('Time [ms]')
+            plt.tight_layout(rect=[0, 0, 1, 1.09])
             plt.savefig(f'{destination}/boxplots-{hostname}-{device_name}-{size}.pdf',
                         bbox_inches='tight', pad_inches=0)
             plt.close()
 
     # Classic plots comparing all the devices (one per machine)
+    handles = []
     devices = MACHINES[hostname].keys() # df['device'].unique()
     for device in devices:
         if device not in MACHINES[hostname]:
@@ -101,21 +107,21 @@ for path in data:
         errors = [1.960 * s/math.sqrt(c)
                   for c, s in zip(line['time']['count'].values,
                                   line['time']['std'].values)]
-        plt.errorbar(xs, ys, yerr=errors, capsize=3,
-                     color=MACHINES[hostname][device]['color'],
-                     marker=MACHINES[hostname][device]['marker'], markersize=8)
+        handle = plt.errorbar(xs, ys, yerr=errors, capsize=3,
+                               color=MACHINES[hostname][device]['color'],
+                               marker=MACHINES[hostname][device]['marker'], markersize=8)
+        handles.append(handle[0]) # remove the errorbar
 
     labels = [MACHINES[hostname][device]['name'] for device in devices]
     x0, y0, width, height = -0.04, 1.02, 1.08, 0.2
-    ncol=2
-    legend = plt.legend(labels, frameon=False, mode='expand',
-                        bbox_to_anchor=(x0, y0, width, height), ncol=ncol,
-                        handlelength=1.5, loc='lower left')
+    legend = plt.legend(handles, labels, handlelength=1, loc='upper left')
 
     plt.xlabel('Size [MiB]')
     plt.xscale('log')
     plt.ylabel('Average time [ms]')
     plt.yscale('log')
+    bottom, top = plt.gca().get_ylim()
+    plt.ylim(bottom=bottom, top=10**len(labels) * top)
     plt.savefig(f'{destination}/plot-{hostname}.pdf',
                 bbox_inches='tight', pad_inches=0)
     plt.close()

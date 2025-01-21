@@ -13,20 +13,22 @@ matplotlib.rc('pdf', fonttype=42)
 
 MACHINES = {
     'anthem': {
-        '/dev/nvme0n1': {'name': 'Samsung SSD 990 PRO (2 TB)', 'color': 'tab:blue', 'marker': 'v'},
+        '/dev/sda': {'name': 'HDD SATA', 'color': 'tab:orange', 'marker': 's'}, # WDC WD10EZEX-08M (1 TB)
+        '/dev/sdb': {'name': 'SSD SATA', 'color': 'tab:purple', 'marker': '1'}, # Samsung SSD 870 (1 TB)
+        '/dev/nvme0n1': {'name': 'SSD M.2 NVMe', 'color': 'tab:blue', 'marker': 'v'}, # Samsung SSD 990 PRO (2 TB)
     },
     'spartan': {
         # NOTE: Device are ordered by their perforamance profile (slowest to fastest)
-        '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'indigo', 'marker': '1'},
-        '/dev/sdb': {'name': 'Samsung SSD 860 (500 GB)', 'color': 'mediumpurple', 'marker': '2'},
-        '/dev/nvme0n1': {'name': 'Samsung SSD 970 EVO+ (2 TB)', 'color': 'dodgerblue', 'marker': '^'},
+        '/dev/sda': {'name': 'SSD SATA', 'color': 'indigo', 'marker': '2'}, # Samsung SSD 860 (1 TB)
+        '/dev/sdb': {'name': 'SSD SATA', 'color': 'mediumpurple', 'marker': '3'}, # Samsung SSD 860 (500 GB)
+        '/dev/nvme0n1': {'name': 'SSD M.2 NVMe', 'color': 'dodgerblue', 'marker': '^'}, # Samsung SSD 970 EVO+ (2 TB)
     },
     'zudomon': {
         # NOTE: Device are ordered by their perforamance profile (slowest to fastest)
-        '/dev/sdb': {'name': 'ST1000VX000-1ES1 (1 TB)', 'color': 'darkorange', 'marker': 's'},
-        '/dev/sdc': {'name': 'ST1000VX000-1ES1 (1 TB)', 'color': 'peachpuff', 'marker': 'D'},
-        '/dev/sda': {'name': 'Samsung SSD 860 (1 TB)', 'color': 'violet', 'marker': '3'},
-        '/dev/nvme0n1': {'name': 'Samsung SSD 970 PRO (1 TB)', 'color': 'deepskyblue', 'marker': '<'},
+        '/dev/sdb': {'name': 'HDD SATA', 'color': 'darkorange', 'marker': 'D'}, # ST1000VX000-1ES1 (1 TB)
+        '/dev/sdc': {'name': 'HDD SATA', 'color': 'peachpuff', 'marker': 'd'}, # ST1000VX000-1ES1 (1 TB)
+        '/dev/sda': {'name': 'SSD SATA', 'color': 'violet', 'marker': '4'}, # Samsung SSD 860 (1 TB)
+        '/dev/nvme0n1': {'name': 'SSD M.2 NVMe', 'color': 'deepskyblue', 'marker': '<'}, # Samsung SSD 970 PRO (1 TB)
     },
 }
 
@@ -114,14 +116,14 @@ for path in data:
 
     labels = [MACHINES[hostname][device]['name'] for device in devices]
     x0, y0, width, height = -0.04, 1.02, 1.08, 0.2
-    legend = plt.legend(handles, labels, handlelength=1, loc='upper left')
+    legend = plt.legend(handles, labels, handlelength=1, loc='upper left', prop={'size': 16})
 
     plt.xlabel('Size [MiB]')
     plt.xscale('log')
     plt.ylabel('Average time [ms]')
     plt.yscale('log')
     bottom, top = plt.gca().get_ylim()
-    plt.ylim(bottom=bottom, top=10**len(labels) * top)
+    plt.ylim(bottom=bottom)#, top=10**(len(labels) - 1) * top)
     plt.savefig(f'{destination}/plot-{hostname}.pdf',
                 bbox_inches='tight', pad_inches=0)
     plt.close()

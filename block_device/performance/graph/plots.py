@@ -116,7 +116,7 @@ for path in data:
 
     labels = [MACHINES[hostname][device]['name'] for device in devices]
     x0, y0, width, height = -0.04, 1.02, 1.08, 0.2
-    legend = plt.legend(handles, labels, handlelength=1, loc='upper left', prop={'size': 16})
+    legend = plt.legend(handles, labels, handlelength=1.3, loc='upper left', prop={'size': 16})
 
     plt.xlabel('Size [MiB]')
     plt.xscale('log')

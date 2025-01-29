@@ -70,7 +70,7 @@ for path in data:
         plt.grid(which="minor", linestyle='dotted', linewidth=0.1)
         plt.suptitle(f'Hostname: {hostname}')
         plt.title(MACHINES[hostname][device]['name'])
-        plt.xlabel('Size [MiB]')
+        plt.xlabel('Key size [MiB]')
         plt.ylabel('Time [ms]')
         plt.yscale('log')
         plt.tight_layout(rect=[0, 0, 1, 1.09])
@@ -87,7 +87,7 @@ for path in data:
             plt.grid(visible=False)
             plt.suptitle(f'Hostname: {hostname}')
             plt.title(MACHINES[hostname][device]['name'])
-            plt.xlabel('Size [MiB]')
+            plt.xlabel('Key size [MiB]')
             plt.xticks(ticks=[1], labels=[str(size)])
             plt.ylabel('Time [ms]')
             plt.tight_layout(rect=[0, 0, 1, 1.09])
@@ -118,7 +118,7 @@ for path in data:
     x0, y0, width, height = -0.04, 1.02, 1.08, 0.2
     legend = plt.legend(handles, labels, handlelength=1.3, loc='upper left', prop={'size': 16})
 
-    plt.xlabel('Size [MiB]')
+    plt.xlabel('Key size [MiB]')
     plt.xscale('log')
     plt.ylabel('Average time [ms]')
     plt.yscale('log')
